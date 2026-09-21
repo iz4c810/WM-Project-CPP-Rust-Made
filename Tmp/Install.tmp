@@ -1,0 +1,34 @@
+# 3. Check for Rust Toolchain to compile install-extras
+info "Checking For Rust Toolchain (Cargo)"
+if command -v cargo >/dev/null 2>&1; then
+    success "Rust Toolchain Found"
+else
+    warn "Rust is missing. Installing Cargo to compile install-extras..."
+    if [ "$PM" = "pacman" ]; then
+        sudo pacman -S --noconfirm rust
+    elif [ "$PM" = "emerge" ]; then
+        # Gentoo splits dev-lang/rust and dev-util/cargo or installs dev-lang/rust-bin
+        sudo emerge --ask dev-lang/rust-bin
+    fi
+
+    # Verify toolchain installation succeeded
+    if ! command -v cargo >/dev/null 2>&1; then
+        error "Failed to install Rust automatically. Please install Cargo manually."
+    fi
+    success "Rust Toolchain installed successfully!"
+fi
+
+# 4. Compile and Run the Rust 'install-extras' binary
+info "Compiling and launching install-extras modules..."
+if [ -d "install-extras" ]; then
+    # Step into your cargo project subdirectory, compile, and run it
+    (cd install-extras && cargo run --release)
+    
+    if [ $? -eq 0 ]; then
+        success "Extras pipeline completed cleanly!"
+    else
+        error "The Rust installer crashed during deployment."
+    fi
+else
+    error "Could not find 'install-extras' repository directory."
+fi
